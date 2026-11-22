@@ -1,61 +1,49 @@
 from fastapi import FastAPI , Body , HTTPException , status
 from typing import Annotated
-from .model import Login , Register
-from .db import Session_DB , createTable 
-from .schema import UserTable
-from sqlmodel import select
+from .db import create_db_and_tables , Session_dp 
+from .model import CreateRole , Register , Login
+from .schema import Role , User
 from pwdlib import PasswordHash
+from sqlmodel import select
+import jwt
 
 pwdhash = PasswordHash.recommended()
+app : FastAPI = FastAPI()
 
-app: FastAPI = FastAPI()
+SECRET_KEY = '__SCRET_KEY__$HASH'
+
 
 @app.on_event('startup')
-def on_startup():
-    createTable()
+def create_database():
+    create_db_and_tables()
 
+@app.post('/create/role',tags=['Create Role'])
+def create_role(role : Annotated[CreateRole , Body()], session : Session_dp):
+    insert_role : Role = Role(**role.model_dump())
+    session.add(insert_role)
+    session.commit()
+    session.refresh(insert_role)
+    return {'message':'Succesfully created role','role': role.role}
 
-@app.put('/auth/login')
-def login(
-    login: Annotated[Login,Body()],
-    session : Session_DB
-    ) -> dict:
-
-    statement = select(UserTable).where(UserTable.email == login.email)
-    result = session.exec(statement).one_or_none()
-
-    if result is None:
-        raise HTTPException(
-                status_code= status.HTTP_404_NOT_FOUND,
-                detail="User e-mail or password are wrong kindly check it")
-
-    if not pwdhash.verify(login.password,result.password):
-        raise HTTPException(
-                status_code= status.HTTP_404_NOT_FOUND,
-                detail="User e-mail or password are wrong kindly check it")
-    
-    return {'message':'login sucessfully'}
-
-@app.put('/auth/register')
-def register(
-    register : Annotated[Register , Body()],
-    session : Session_DB
-    ) -> dict:
-
-    if register.confirmPassword != register.password:
-        raise HTTPException(
-            status_code= status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="Entered message are not same")
-
-    hashPassword = pwdhash.hash(register.password)
-    
-    user : UserTable = UserTable(
-        **register.model_dump(
-            exclude={'password'}
-            ),
-            password=hashPassword)
+@app.post('/auth/register',tags=['Auth'])
+def auth_register(register : Annotated[Register,Body()] , session : Session_dp):
+    if register.confirm_password != register.password:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT,'Confirm password is not the same to password')
+    encode_password = pwdhash.hash(register.password)
+    user : User = User(**register.model_dump(exclude={'password'}),password=encode_password)
     session.add(user)
     session.commit()
     session.refresh(user)
+    return {'message':'Sucessfully create a user'}
+@app.post('/auth/login',tags=['Auth'])
+def auth_login(login: Annotated[Login,Body()],session : Session_dp):
 
-    return user.model_dump(exclude={'password'})
+    statement = select(User).where(User.email == login.email)
+    result : User | None = session.exec(statement).one_or_none()
+    if result is None :
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED,'Email or password not correct')
+    if not pwdhash.verify(login.password , result.password):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED,'Email or password not correct')
+    
+    token = jwt.encode(result.model_dump(exclude={'password'}),SECRET_KEY,algorithm='HS256')
+    return {'message':'login successfully','token': token} 
