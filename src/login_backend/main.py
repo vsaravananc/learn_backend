@@ -5,8 +5,12 @@ from .db import Session_DB , createTable
 from .schema import UserTable
 from sqlmodel import select
 from pwdlib import PasswordHash
+import jwt as JWT
 
 pwdhash = PasswordHash.recommended()
+
+PUBLIC_SECRET_KEY = '__Saravanan_Secret_Key__SSK__'
+PRIVATE_SECRET_KEY = '__Saravanan_Private_Secret_key _SPSK__'
 
 app: FastAPI = FastAPI()
 
@@ -34,7 +38,9 @@ def login(
                 status_code= status.HTTP_404_NOT_FOUND,
                 detail="User e-mail or password are wrong kindly check it")
     
-    return {'message':'login sucessfully'}
+    encod = JWT.encode(result.model_dump(),PRIVATE_SECRET_KEY,algorithm="RS256")
+
+    return {'message':'login sucessfully','key':encod}
 
 @app.put('/auth/register')
 def register(
