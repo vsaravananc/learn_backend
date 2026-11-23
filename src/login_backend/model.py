@@ -15,3 +15,8 @@ class Register(BaseModel):
 class Login(BaseModel):
     email : Annotated[EmailStr , Field(description='User_mail_id')]
     password :  Annotated[str,Field(description='User_password')]
+
+class TodoBody(BaseModel):
+    title : Annotated[str,Field(default="Todo 1",min_length=3,max_length=100)]
+    description : Annotated[str,Field(default="Todo 1 description",min_length=3,max_length=500)]
+    completed : Annotated[bool,Field(default=False)]
