@@ -53,6 +53,7 @@ def create_todo(
     token:Annotated[str,Header(min_length=5)],
     todo:Annotated[TodoBody,Body()],
     session : Session_dp):
+
     decode_token = jwt.decode(token,key=SECRET_KEY,algorithms=['HS256'])
     user_todo : Todo = Todo(**todo.model_dump(exclude={'created_at'}),user_id=decode_token['id'])
     session.add(user_todo)
