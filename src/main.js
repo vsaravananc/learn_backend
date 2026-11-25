@@ -1,10 +1,7 @@
 import express from 'express'
 import { authRouter } from './routes/auth.routes.js';
 const app = express();
-
-app.get('/', (req, res) => {
-    res.send({"happy":"see you"})
-})
+app.use(express.json())
 
 app.use('/auth',authRouter)
 
