@@ -1,5 +1,6 @@
 import { authValidator, createUser } from "../validators/auth.validators.js"
 import { prisma } from "../config/db.js"
+import { adminFCM } from "../config/fcm.js"
 
 export const loginController = async (req , res) => {
     try {
@@ -56,6 +57,30 @@ export const updateFCMController = async (req, res) => {
         console.log(error);
         return res.status(500).json({
             message: "Internal server error",
+        });
+    }
+};
+
+export const sendFcmController = async (req, res) => {
+    try {
+        const { fcm, title, msg } = req.body;
+        const response = await adminFCM.send({
+            notification: {
+                title: title,
+                body: msg,
+            },
+            token: fcm,
+        });
+
+        return res.status(200).json({
+            message: "Notification sent successfully",
+            data: response,
+        });
+
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            message: "Failed to send notification",
         });
     }
 };
