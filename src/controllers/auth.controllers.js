@@ -1,6 +1,6 @@
 import { authValidator } from "../validators/auth.validators.js"
 
-export const loginController = async (req, res) => {
+export const loginController = async (req , res) => {
     try {
         const result = await authValidator.validateAsync(req.body)
         res.json(req.body)
