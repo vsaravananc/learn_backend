@@ -64,7 +64,7 @@ export const updateFCMController = async (req, res) => {
 export const sendFcmController = async (req, res) => {
     try {
         const { fcm, title, msg } = req.body;
-        const response = await adminFCM.send({
+        const response = await adminFCM.messaging().send({
             notification: {
                 title: title,
                 body: msg,
